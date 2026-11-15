@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="top">
+<header class="bar">
+  <a class="brand" href="/">Wren</a>
+  <div class="search">
+    <input class="field" type="search" name="q" value="{{ q }}" placeholder="Search drawings" aria-label="Search drawings" data-slash
+           hx-get="/" hx-target="#grid" hx-trigger="input changed delay:200ms, search" hx-include="#source">
+    <kbd>/</kbd>
+  </div>
+  <input type="hidden" id="source" name="source" value="{{ source }}">
+  <form class="upload" hx-post="/upload" hx-encoding="multipart/form-data" hx-trigger="change" hx-target="#upload-note"
+        hx-on::response-error="this.querySelector('#upload-note').textContent = `Upload failed (${event.detail.xhr.status} ${event.detail.xhr.statusText}).`"
+        hx-on::send-error="this.querySelector('#upload-note').textContent = 'Upload failed: no answer from the server. Reload the page and try again.'"
+        hx-on::after-request="this.reset()">
+    <span id="upload-note"></span>
+    <span class="htmx-indicator">Reading…</span>
+    <label class="btn quiet">Upload drawing<input type="file" name="file" accept=".pdf,.dxf,.ifc,image/*" hidden></label>
+  </form>
+</header>
+<nav class="tabs sources">
+  <a class="{{ 'on' if not source }}" href="/?{{ {'q': q} | urlencode }}">All <span class="n">{{ counts.values() | sum }}</span></a>
+  {% for s, name in SOURCES.items() if s in counts %}
+  <a class="{{ 'on' if s == source }}" href="/?{{ {'q': q, 'source': s} | urlencode }}">{{ name }} <span class="n">{{ counts[s] }}</span></a>
+  {% endfor %}
+</nav>
+</div>
+<main id="grid" class="grid">
+  {% include "cards.html" %}
+</main>
+<script>
+  // the header slides away while scrolling down the list and comes back on any scroll up
+  let lastY = scrollY;
+  addEventListener('scroll', () => {
+    const y = scrollY, top = document.querySelector('.top');
+    if (Math.abs(y - lastY) < 4) return;
+    top.classList.toggle('away', y > lastY && y > top.offsetHeight);
+    lastY = y;
+  }, {passive: true});
+</script>
+{% endblock %}

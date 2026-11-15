@@ -1,0 +1,60 @@
+<div id="result"{% if a %} class="has"{% endif %}{% if recount %} data-recount="{{ recount }}"{% endif %}>
+{% if a %}
+  {% include "thread.html" %}
+  {% if question %}<div class="q">{{ question }}</div>{% endif %}
+  {% if a.value is not none %}
+  {% if a.value is string %}<div class="value text">{{ a.value }}</div>
+  {% else %}<div class="value"><span class="v">{{ a.value | round(2) if a.value is float else a.value }}</span>{% if a.unit and a.unit != 'count' %}<span class="unit">{{ a.unit }}</span>{% endif %}</div>{% endif %}
+  {% endif %}
+  {% if a.text %}<div class="explain">{{ a.text }}</div>{% endif %}
+  <div class="facts">
+    {% if ref is not none %}{% set ok = matches(ref, a.value) %}
+    <div class="{{ 'ok' if ok else 'bad' }}" data-ref="{{ ref }}">{{ '✓' if ok else '✗' }} Stoa's answer: {{ ref }}</div>
+    {% endif %}
+    {% set total = a.ids | unique | list | length %}
+    {% if view and total > 1 and here < total %}<div>{{ here }} of {{ total }} outlined on this plan{% if nowhere %}, {{ nowhere }} on no plan{% endif %}{% if total - here - nowhere > 0 %}; the tabs count the others per plan{% endif %}</div>{% endif %}
+    {% if recount %}<div class="edited" hidden><span></span> · <button type="button" class="link" onclick="resetCount()">Count all again</button></div>{% endif %}
+    {% if area_off %}<div class="warn">{{ area_off }} of these rooms: the printed area differs from the room's outline by more than 2% (≠)</div>{% endif %}
+    {% if seen %}<div>Outlines read from the picture by the vision model are approximate (orange)</div>{% endif %}
+    {% if a.via == 'llm' %}<div>Answered by {{ a.usage }}</div>
+    {% elif a.read_as %}<div>Read as “{{ a.read_as }}” by {{ a.usage }}; template <code>{{ a.via }}</code></div>
+    {% elif a.via != 'graph' %}<div>Template <code>{{ a.via }}</code>, no model call</div>{% endif %}
+  </div>
+  {% if steps %}
+  <ol class="steps">
+    {% for what, ns in steps %}<li class="step" data-ns="{{ ns | join(' ') }}">{{ what }}</li>{% endfor %}
+  </ol>
+  {% endif %}
+  {% if table %}{% set columns, rows = table %}
+  <details class="list"{{ ' open' if rows | length <= 10 }}>
+  <summary>{{ rows | length }} rows</summary>
+  <div class="sheet">
+    <table>
+      <tr><th>#</th>{% for c in columns %}<th>{{ c }}</th>{% endfor %}</tr>
+      {% for r in rows %}
+      <tr class="mark" data-n="{{ loop.index }}"><td>{{ loop.index }}</td>{% for c in columns %}<td>{{ r.attrs.get(c, '') }}</td>{% endfor %}</tr>
+      {% endfor %}
+    </table>
+  </div>
+  </details>
+  {% elif a.ids %}
+  <details class="list"{{ ' open' if a.ids | length <= 10 }}>
+  <summary>{{ listed }}</summary>
+  <ol class="items{{ ' recount' if recount }}">
+    {% for nid in a.ids[:300] %}{% set n = g.nodes[nid] %}{% set off = outline_off(n) %}
+    <li class="mark{{ ' low' if n.conf < 0.7 }}" data-n="{{ loop.index }}"{% if recount == 'sum' %} data-v="{{ g.area(n) }}"{% endif %}>
+      {% if recount %}<input type="checkbox" class="keep" checked aria-label="Count item {{ loop.index }}">{% endif %}
+      <span class="num">{{ loop.index }}</span>
+      {% set at = where(g, n) %}
+      {# the summary names the shared category ("30 × door"), so unnamed items show only where they are #}
+      <span class="name">{% if uniform and not n.name and at %}{{ at }}{% else %}{{ n.name or (n.cat or '').replace('_', ' ') }}{% if n.number and n.number not in (n.name or '') %} {{ n.number }}{% endif %}{% if at %} <span class="where">{{ at }}</span>{% endif %}{% endif %}</span>
+      <span class="val">{% if g.area(n) is not none %}{{ g.area(n) }} m²{% if off %} <span class="diff" title="Printed {{ n.attrs.area_printed_m2 }} m², outline {{ off }} m²">≠ {{ off }}</span>{% endif %}{% elif n.conf < 1 %}{{ '%.0f' | format(n.conf * 100) }}%{% endif %}</span>
+    </li>
+    {% endfor %}
+  </ol>
+  {% if a.ids | length > 300 %}<div class="more-items">and {{ a.ids | length - 300 }} more</div>{% endif %}
+  </details>
+  {% endif %}
+  {% if thread %}<input type="hidden" name="history" form="ask" value='{{ thread | tojson }}'>{% endif %}
+{% endif %}
+</div>

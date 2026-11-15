@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}{{ g.id }}{% endblock %}
+{% block body %}
+<header class="bar">
+  <nav class="crumb">
+    <a href="/">Drawings</a><span class="sep">/</span>
+    <span class="id mono" title="{{ g.id }}">{{ g.id }}</span>
+    <span class="muted">{% if g.title | label %}{{ g.title | label }} · {% endif %}{{ SOURCES[g.source | group] }}</span>
+  </nav>
+</header>
+<main class="work">
+  {% include "figure.html" %}
+  <aside class="panel" id="panel">
+    <form id="ask" class="ask" hx-post="/d/{{ g.id | urlencode }}/ask" hx-target="#result" hx-swap="outerHTML" hx-indicator="#panel"
+          hx-on::after-request="if (event.detail.successful) this.question.value = ''">
+      <input class="field" type="search" name="question" id="question" placeholder="Ask about this drawing"
+             aria-label="Question" autocomplete="off" required data-slash autofocus>
+      <button class="btn">Ask</button>
+      <a class="btn quiet restart" href="/d/{{ g.id | urlencode }}">New question</a>
+    </form>
+    {% include "result.html" %}
+    <section>
+      <h2>In this drawing</h2>
+      <div class="layers">
+        {% for key, name, n in contents %}
+        <button type="button" class="layer{{ ' wide' if key.startswith('table:') }}{{ ' on' if key == show }}" title="{{ name }}" hx-post="/d/{{ g.id | urlencode }}/ask" hx-vals='{"show": "{{ key }}"}'
+                hx-include="[name=view]" hx-target="#result" hx-swap="outerHTML" hx-indicator="#panel" onclick="pick(this)"><span class="name">{{ name }}</span><span class="n">{{ n }}</span></button>
+        {% else %}
+        <span class="muted">Nothing extracted yet.</span>
+        {% endfor %}
+      </div>
+      {% if examples %}
+      <details>
+        <summary>Dataset questions <span class="n">{{ examples | length }}</span></summary>
+        <ul class="examples">
+          {% for q, r in examples %}<li><a href="#" data-q="{{ q }}" onclick="ask(this.dataset.q); return false">{{ q }}</a></li>{% endfor %}
+        </ul>
+      </details>
+      {% endif %}
+      <details>
+        <summary>Graph summary</summary>
+        <pre>{{ g.manifest }}</pre>
+      </details>
+    </section>
+  </aside>
+</main>
+<script>
+  const plan = () => document.getElementById('plan');
+  let home = null, drag = null, start = null, dragged = false;
+  document.addEventListener('htmx:afterSwap', () => home = null);
+  // a dataset question starts a new conversation
+  function ask(q) { document.querySelector('[name=history]')?.remove(); document.getElementById('question').value = q; document.getElementById('ask').requestSubmit(); }
+  // after an answer, the next question is a follow-up
+  const followUp = () => document.getElementById('question').placeholder = document.querySelector('[name=history]') ? 'Ask a follow-up' : 'Ask about this drawing';
+  document.addEventListener('htmx:afterSwap', followUp); followUp();
+  function pick(b) { document.getElementById('question').value = ''; document.querySelectorAll('.layer.on').forEach(x => x.classList.remove('on')); b.classList.add('on'); }
+  function setBox(b) { const v = plan().viewBox.baseVal; home ??= [v.x, v.y, v.width, v.height]; [v.x, v.y, v.width, v.height] = b; labels(); }
+  // outline numbers keep a readable 12 px on screen at every zoom
+  function labels() {
+    const svg = plan(); if (!svg) return;
+    const v = svg.viewBox.baseVal, r = svg.getBoundingClientRect();
+    svg.style.setProperty('--label', 12 * Math.max(v.width / r.width, v.height / r.height) + 'px');
+  }
+  labels(); addEventListener('resize', labels); document.addEventListener('htmx:afterSettle', labels);
+  // unchecking an item leaves it out of the answer: the count or area sum is recomputed and its outline dashed
+  document.addEventListener('change', e => {
+    if (!e.target.matches('.keep')) return;
+    const li = e.target.closest('li'), r = document.getElementById('result');
+    li.classList.toggle('off', !e.target.checked);
+    document.querySelectorAll(`#plan .mark[data-n="${li.dataset.n}"]`).forEach(m => m.classList.toggle('off', !e.target.checked));
+    const kept = [...r.querySelectorAll('li.mark')].filter(x => x.querySelector('.keep').checked);
+    const v = r.dataset.recount === 'count' ? kept.length : Math.round(kept.reduce((s, x) => s + +x.dataset.v, 0) * 100) / 100;
+    r.querySelector('.value .v').textContent = v;
+    const ref = r.querySelector('[data-ref]');  // Stoa's scoring rule: counts exact, areas within 2%
+    if (ref) { const want = +ref.dataset.ref, ok = r.dataset.recount === 'count' ? v === want : Math.abs(v - want) <= 0.02 * Math.abs(want);
+               ref.className = ok ? 'ok' : 'bad'; ref.textContent = `${ok ? '✓' : '✗'} Stoa's answer: ${ref.dataset.ref}`; }
+    const out = r.querySelectorAll('.keep:not(:checked)').length, ed = r.querySelector('.edited');
+    ed.hidden = !out; ed.querySelector('span').textContent = `${out} left out by you`;
+  });
+  function resetCount() { document.querySelectorAll('#result .keep:not(:checked)').forEach(c => { c.checked = true; c.dispatchEvent(new Event('change', {bubbles: true})); }); }
+  function fit() { if (home) { setBox(home); home = null; } }
+  // hovering a list row and its outline highlights both
+  for (const t of ['mouseover', 'mouseout'])
+    document.addEventListener(t, e => {
+      const m = e.target.closest('.mark');
+      if (m) document.querySelectorAll(`.mark[data-n="${m.dataset.n}"]`).forEach(x => x.classList.toggle('hot', t === 'mouseover'));
+      // hovering a step of the model's lookup highlights the answer's nodes it returned
+      const st = e.target.closest('.step');
+      if (st) for (const n of st.dataset.ns.split(' ').filter(Boolean))
+        document.querySelectorAll(`.mark[data-n="${n}"]`).forEach(x => x.classList.toggle('hot', t === 'mouseover'));
+    });
+  // clicking an outline on the plan opens the answer's list at that item, to check or uncheck it
+  document.addEventListener('click', e => {
+    const m = e.target.closest('#plan .mark'); if (!m || dragged) return;
+    const row = document.querySelector(`#result li.mark[data-n="${m.dataset.n}"], #result tr.mark[data-n="${m.dataset.n}"]`); if (!row) return;
+    row.closest('details').open = true;
+    document.querySelectorAll('#result .picked').forEach(x => x.classList.remove('picked'));
+    row.classList.add('picked');
+    row.scrollIntoView({block: 'center', behavior: 'smooth'});
+  });
+  // clicking a list row zooms the plan to its outline
+  document.addEventListener('click', e => {
+    const row = e.target.closest('li.mark, tr.mark'); if (!row || !plan() || e.target.matches('.keep')) return;
+    const p = plan().querySelector(`.mark[data-n="${row.dataset.n}"] path`); if (!p) return;
+    const b = p.getBBox(), s = Math.max(b.width, b.height) * 5;
+    setBox([b.x + b.width / 2 - s / 2, b.y + b.height / 2 - s / 2, s, s]);
+  });
+  // wheel zooms around the cursor in proportion to the scroll distance (a mouse notch is ~10%, trackpads zoom smoothly), drag pans, double-click fits
+  document.addEventListener('wheel', e => {
+    const svg = e.target.closest('#plan'); if (!svg) return;
+    e.preventDefault();
+    const v = svg.viewBox.baseVal, r = svg.getBoundingClientRect(), k = Math.exp(e.deltaY * (e.deltaMode ? 33 : 1) * 0.001);
+    const u = Math.max(v.width / r.width, v.height / r.height);
+    const px = v.x + (e.clientX - r.left - (r.width - v.width / u) / 2) * u, py = v.y + (e.clientY - r.top - (r.height - v.height / u) / 2) * u;
+    setBox([px - (px - v.x) * k, py - (py - v.y) * k, v.width * k, v.height * k]);
+  }, {passive: false});
+  document.addEventListener('mousedown', e => { const svg = e.target.closest('#plan'); if (svg) { const v = svg.viewBox.baseVal; home ??= [v.x, v.y, v.width, v.height]; drag = start = {x: e.clientX, y: e.clientY}; dragged = false; e.preventDefault(); } });
+  document.addEventListener('mouseup', () => drag = null);
+  document.addEventListener('mousemove', e => {
+    if (!drag) return;
+    const v = plan().viewBox.baseVal, r = plan().getBoundingClientRect(), u = Math.max(v.width / r.width, v.height / r.height);
+    v.x -= (e.clientX - drag.x) * u; v.y -= (e.clientY - drag.y) * u;
+    dragged ||= Math.abs(e.clientX - start.x) + Math.abs(e.clientY - start.y) > 3;  // a pan ends in a click that picks nothing
+    drag = {x: e.clientX, y: e.clientY};
+  });
+  document.addEventListener('dblclick', e => { if (e.target.closest('#plan')) fit(); });
+</script>
+{% endblock %}

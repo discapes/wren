@@ -1,0 +1,21 @@
+[project]
+name = "blueprints-detector"
+version = "0.1.0"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+    "svgpathtools",
+    "pillow",
+    "ultralytics",
+    "torch",
+    "torchvision",
+    "scikit-learn>=1.9.1",
+]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
