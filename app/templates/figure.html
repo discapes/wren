@@ -1,0 +1,30 @@
+<section id="figure" hx-swap-oob="true">
+  {% if view %}
+  <div class="tool">
+    {% if views | length > 1 %}
+    <nav class="tabs">
+      {% for v in views %}
+      <a class="{{ 'on' if v.id == view.id }}" href="/d/{{ g.id | urlencode }}?{{ {'view': v.id, 'q': question, 'show': show} | urlencode }}">{{ v.id.replace(g.id ~ '_', '').split('/')[0] }}{% if per_view.get(v.id) %} <span class="n">{{ per_view[v.id] }}</span>{% endif %}</a>
+      {% endfor %}
+    </nav>
+    {% endif %}
+    <span class="hint">Scroll to zoom, drag to pan</span>
+    <button type="button" class="btn quiet" onclick="fit()" title="Fit to view (double-click)">Fit</button>
+  </div>
+  {% set x0, y0, w, h = view.box %}
+  <svg id="plan" viewBox="{{ crop | join(' ') }}">
+    <image href="/view/{{ g.id | urlencode }}/{{ view.id }}" x="{{ x0 }}" y="{{ y0 }}" width="{{ w }}" height="{{ h }}"/>
+    {% for n, node, d, (cx, cy), side in marks %}
+    <g class="mark{{ ' low' if node.conf < 0.7 }}" data-n="{{ n }}">
+      <path d="{{ d }}" vector-effect="non-scaling-stroke"/>
+      {% if marks | length <= 300 %}
+      <text x="{{ cx }}" y="{{ cy }}" dominant-baseline="hanging">{{ n }}</text>
+      {% endif %}
+    </g>
+    {% endfor %}
+  </svg>
+  <input type="hidden" name="view" value="{{ view.id }}" form="ask">
+  {% else %}
+  <p class="nofig">This model comes without a floor plan render, so answers list the elements they used without outlining them.</p>
+  {% endif %}
+</section>

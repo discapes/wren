@@ -1,0 +1,5 @@
+{% if history %}
+<ol class="thread">
+  {% for t in history %}<li><div class="q">{{ t.q }}</div><div>{{ t.value }}{% if t.value and t.text %} · {% endif %}{{ t.text }}</div></li>{% endfor %}
+</ol>
+{% endif %}

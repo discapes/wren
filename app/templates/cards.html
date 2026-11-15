@@ -1,0 +1,14 @@
+{% for id, src, title in rows %}
+<a class="card" href="/d/{{ id | urlencode }}">
+  <div class="pic"><img loading="lazy" decoding="async" src="/thumb/{{ id | urlencode }}" alt="" onerror="this.replaceWith('No render')"></div>
+  <div class="meta">
+    <div class="id" title="{{ id }}">{{ id }}</div>
+    <div class="sub">{% if title | label %}{{ title | label }} · {% endif %}{{ SOURCES[src] }}</div>
+  </div>
+</a>
+{% else %}
+<p class="empty">No drawings match.</p>
+{% endfor %}
+{% if more %}
+<div class="more" hx-get="/?{{ {'q': q, 'source': source, 'offset': offset} | urlencode }}" hx-trigger="intersect once" hx-swap="outerHTML"></div>
+{% endif %}

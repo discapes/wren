@@ -1,0 +1,24 @@
+# Canonical room categories and the labels that map to them, in any language.
+# Labels match case- and accent-insensitively, ignoring digits and text in parentheses.
+rooms:
+  living: [Wohnen, Wohnen/Essen, Essen, Séjour, Séjour/repas, Repas, Soggiorno, Soggiorno/pranzo, Pranzo, OH, TUPA, Living, Living room, Dining]
+  bedroom: [Zimmer, Schlafzimmer, Pièce, Chambre à coucher, Chambre, Stanza, Camera da letto, MH, Bedroom, Room]
+  kitchen: [Küche, Küche/Essen, Cuisine, Cucina, K, KK, KEITTIÖ, TUPAKEITTIÖ, Kitchen, Kitchenette]
+  bathroom: [Bad, Bain, Bagno, KH, KPH, PH, PESUH, SH, PSH, Bathroom, Bath]
+  wc: [WC, Toilet, Toilette, Toilette/WC]
+  sauna: [S, SAUNA, Sauna]
+  corridor: [Korridor, Couloir, Corridoio, Halle, Hall, Eingangshalle, Hall d'entrée, ET, AULA, Corridor, Entry]
+  storage: [Reduit, Réduit, Ripostiglio, Kellerabteil, Vano cantina, Compartiment cave, VH, VAR, VARASTO, Storage, Closet]
+  laundry: [Waschen/Trocknen, Lavanderia, Buanderie, KHH, Laundry]
+  stair: [Treppenhaus, Cage d'escalier, Vano scala, Stair, Staircase]
+  elevator: [Lift, Ascenseur, Ascensore, Elevator]
+  office: [Büro, Bürofläche, Grossraumbüro, Office]
+  technical: [Technik, Locale tecnico, TEKN, Technical room]
+  balcony: [Balkon, Balcon, Balcone, PARVEKE, LASITETTU PARVEKE, Balcony]
+  loggia: [Loggia]
+  terrace: [Terrasse, Terrazza, TERASSI, Sitzplatz, Patio, Garten, Terrace]
+  winter_garden: [Wintergarten, Jardin d'hiver, Giardino d'inverno]
+  shaft: [Schacht, Gaine, Cavedio, Shaft]
+  void: [Luftraum, Vide, Vuoto, Void]
+
+outdoor: [balcony, loggia, terrace, winter_garden]

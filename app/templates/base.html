@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Wren{% endblock %}</title>
+<link rel="preload" href="/static/plex-sans.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/static/app.css">
+<script src="/static/htmx.min.js"></script>
+</head>
+<body>
+{% block body %}{% endblock %}
+<script>
+  // "/" focuses the page's main input from anywhere outside a field
+  document.addEventListener('keydown', e => {
+    if (e.key !== '/' || e.target.closest('input, textarea')) return;
+    const f = document.querySelector('[data-slash]'); if (f) { e.preventDefault(); f.focus(); f.select(); }
+  });
+</script>
+</body>
+</html>

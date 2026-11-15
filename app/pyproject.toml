@@ -1,0 +1,25 @@
+[project]
+name = "blueprints-app"
+version = "0.1.0"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+    "ezdxf",
+    "ifcopenshell",
+    "pymupdf",
+    "shapely",
+    "numpy",
+    "pyyaml",
+    "pillow",
+    "fastapi",
+    "uvicorn",
+    "jinja2",
+    "python-multipart",
+    "svg-path>=7.1",
+    "svgpathtools>=1.8.0",
+    "watchfiles>=1.3.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+]

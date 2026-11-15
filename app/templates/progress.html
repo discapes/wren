@@ -1,0 +1,8 @@
+<div id="result" class="has" hx-get="/d/{{ g.id | urlencode }}/ask/{{ key }}" hx-trigger="load delay:400ms" hx-swap="outerHTML">
+  {% include "thread.html" %}
+  <div class="q">{{ job.question }}</div>
+  <ol class="progress">
+    {% for what in job.steps %}<li>{{ what }}</li>{% endfor %}
+    <li class="now">{{ job.now }}…</li>
+  </ol>
+</div>
